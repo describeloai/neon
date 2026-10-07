@@ -11,6 +11,14 @@ commands:
     user: root
     sysvInitAction: sysinit
     shell: 'chmod 711 /neonvm/bin/resize-swap'
+  # ORE (ADR 0058, P3·6): announce this VM's overlay IP and MAC at boot (gratuitous ARP). NeonVM's IPAM
+  # hands out the lowest free IP, i.e. usually the one the previous VM had, with a NEW MAC; whoever still
+  # has the old MAC cached (the proxy) can't reach the new VM until that entry expires (~10 s measured,
+  # ~1 min seen in C4). The IP is the one NeonVM passes on the kernel command line (ip=...:eth1:off).
+  - name: ore-announce-overlay
+    user: root
+    sysvInitAction: sysinit
+    shell: 'ip=$(sed -n "s/.* ip=\([0-9.]*\):.*/\1/p" /proc/cmdline); if [ -n "$ip" ]; then (/neonvm/bin/arping -U -c 3 -I eth1 "$ip" >/dev/null 2>&1 &); fi; true'
   - name: chmod-set-disk-quota
     user: root
     sysvInitAction: sysinit
