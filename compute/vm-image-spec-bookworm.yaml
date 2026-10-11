@@ -19,6 +19,14 @@ commands:
     user: root
     sysvInitAction: sysinit
     shell: 'ip=$(sed -n "s/.* ip=\([0-9.]*\):.*/\1/p" /proc/cmdline); if [ -n "$ip" ]; then (/neonvm/bin/arping -U -c 3 -I eth1 "$ip" >/dev/null 2>&1 &); fi; true'
+  # ORE (ADR 0058, P6·5 in production): the image has no "localhost" in /etc/hosts. A pool VM starts with
+  # no spec, and compute_ctl then prewarms (initdb + postgres with the default listen_addresses=localhost,
+  # port 51055): postgres dies with "could not translate host name localhost", compute_ctl exits, and the
+  # VM never reports `empty`. Endpoint VMs listen on '*' and never noticed.
+  - name: ore-localhost
+    user: root
+    sysvInitAction: sysinit
+    shell: 'grep -qw localhost /etc/hosts 2>/dev/null || echo "127.0.0.1 localhost" >> /etc/hosts'
   - name: chmod-set-disk-quota
     user: root
     sysvInitAction: sysinit
